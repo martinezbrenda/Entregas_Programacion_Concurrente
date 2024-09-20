@@ -16,13 +16,13 @@ public class CountCharacters
     private static final int OK = 0;
     private static final int ERROR = 1;
 
-    // Lista del contenido del archivo
+    
     private static List<String> lines = new ArrayList<>();
 
-    // Vector de resultados parciales
+    
     private static int partialResults[];
 
-    // Mutex global
+    
     private static final ReentrantLock mutex = new ReentrantLock();
 
     public static class CharacterCounterThread extends Thread

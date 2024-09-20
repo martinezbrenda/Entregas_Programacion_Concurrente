@@ -25,13 +25,13 @@ class Level1
 
     children = new Process[2];
 
-    // Process C
+    
 
     builder = new ProcessBuilder("java", FOLLOWING_LEVEL, PROCESS_C_CHILD_NUMBER);
     builder.inheritIO();
     children[0] = builder.start();
 
-    // Process D
+    
 
     builder = new ProcessBuilder("java", FOLLOWING_LEVEL, PROCESS_D_CHILD_NUMBER);
     builder.inheritIO();

@@ -11,13 +11,13 @@ INITIAL_THREAD_COUNT = 0
 OK = 0
 ERROR = 1
 
-# Lista del contenido del archivo
+
 lines = []
 
-# Lista de resultados parciales
+
 partial_results = []
 
-# Mutex global
+
 mutex = threading.Lock()
 
 def open_file(filename):
@@ -45,7 +45,7 @@ def count_characters(ini, stop, partial_result_pos):
     for i in range(ini, stop):
         count += len(lines[i])
 
-    # Proteger la región crítica donde se guarda el resultado parcial
+    
     with mutex:
         partial_results[partial_result_pos] = count
 
@@ -61,7 +61,7 @@ def create_threads(num_threads, num_lines):
         thread.start()
         initial_position = last_position
 
-    # Esperar a que terminen todos los hilos
+    
     for thread in threads:
         thread.join()
 def sum_partial_results(num_threads):

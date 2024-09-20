@@ -26,32 +26,29 @@ void print_process(char name)
 int main()
 {
     pid_t pid_A, pid_B, pid_C, pid_D, pid_E, pid_F, pid_G, pid_H, pid_I;
-
-    // Proceso A
     print_process(PROCESS_A);
 
     pid_B = fork();
     if (pid_B == PROCESO_HIJO)
     {
-        // Proceso B
         print_process(PROCESS_B);
 
         pid_C = fork();
         if (pid_C == PROCESO_HIJO)
         {
-            // Proceso C
+            
             print_process(PROCESS_C);
 
             pid_E = fork();
             if (pid_E == PROCESO_HIJO)
             {
-                // Proceso E
+                
                 print_process(PROCESS_E);
 
                 pid_H = fork();
                 if (pid_H == PROCESO_HIJO)
                 {
-                    // Proceso H
+                    
                     print_process(PROCESS_H);
                 }
                 else
@@ -59,7 +56,7 @@ int main()
                     pid_I = fork();
                     if (pid_I == PROCESO_HIJO)
                     {
-                        // Proceso I
+                        
                         print_process(PROCESS_I);
                     }
                 }
@@ -70,13 +67,13 @@ int main()
             pid_D = fork();
             if (pid_D == PROCESO_HIJO)
             {
-                // Proceso D
+                
                 print_process(PROCESS_D);
 
                 pid_F = fork();
                 if (pid_F == PROCESO_HIJO)
                 {
-                    // Proceso F
+                    
                     print_process(PROCESS_F);
                 }
                 else
@@ -84,7 +81,7 @@ int main()
                     pid_G = fork();
                     if (pid_G == PROCESO_HIJO)
                     {
-                        // Proceso G
+                        
                         print_process(PROCESS_G);
                     }
                 }
@@ -92,7 +89,7 @@ int main()
         }
     }
 
-    // Esta funcion es para tener tiempo de ejecutar el comando pstree y validar el arbol
+    
     sleep(TIEMPO_DE_ESPERA);
 
     while (wait(TODOS) > PROCESOS_ACTIVOS)

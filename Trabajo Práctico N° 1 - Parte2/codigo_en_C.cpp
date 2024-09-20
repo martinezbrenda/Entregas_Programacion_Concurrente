@@ -19,7 +19,7 @@
 std::mutex mutex;
 std::vector<int> partial_results;
 
-// Función para contar caracteres en un rango de líneas del archivo
+
 void count_characters(const std::vector<std::string> &lines, int ini, int stop, int partial_result_pos)
 {
     int count = INITIAL_COUNT_VALUE;
@@ -28,12 +28,12 @@ void count_characters(const std::vector<std::string> &lines, int ini, int stop, 
         count += lines[i].length();
     }
 
-    // Proteger la región crítica donde se guarda el resultado parcial
+    
     std::lock_guard<std::mutex> guard(mutex);
     partial_results[partial_result_pos] = count;
 }
 
-// Función para abrir y cerrar el archivo
+
 std::ifstream open_file(const std::string &filename)
 {
     std::ifstream text_file(filename);
@@ -45,7 +45,7 @@ std::ifstream open_file(const std::string &filename)
     return text_file;
 }
 
-// Función para leer todas las líneas del archivo
+
 std::vector<std::string> read_lines(std::ifstream &text_file)
 {
     std::vector<std::string> lines;
@@ -60,7 +60,7 @@ std::vector<std::string> read_lines(std::ifstream &text_file)
     return lines;
 }
 
-// Función para crear y lanzar los threads
+
 void create_threads(int num_threads, const std::vector<std::string> &lines, int num_lines)
 {
     std::vector<std::thread> threads;
@@ -74,14 +74,14 @@ void create_threads(int num_threads, const std::vector<std::string> &lines, int 
         initial_position = last_position;
     }
 
-    // Esperar a que terminen todos los hilos
+    
     for (auto &t : threads)
     {
         t.join();
     }
 }
 
-// Función para sumar los resultados parciales
+
 int sum_partial_results(int num_threads)
 {
     int total_result = INITIAL_COUNT_VALUE;
@@ -92,7 +92,7 @@ int sum_partial_results(int num_threads)
     return total_result;
 }
 
-// Función para medir el tiempo de procesamiento y mostrar el resultado
+
 void process_and_show_results(int total_result, std::chrono::high_resolution_clock::time_point start_time)
 {
     auto finish_time = std::chrono::high_resolution_clock::now();

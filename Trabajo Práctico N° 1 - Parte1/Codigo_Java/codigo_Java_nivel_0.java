@@ -20,7 +20,7 @@ public class Level0
 
     children = new Process[1];
 
-    // Process B
+    
 
     builder = new ProcessBuilder("java", FOLLOWING_LEVEL);
     builder.inheritIO();
