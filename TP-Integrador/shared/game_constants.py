@@ -1,0 +1,5 @@
+GRID_SIZE = 4  # For a 4x4 grid
+MAX_PLAYERS = GRID_SIZE * GRID_SIZE  # 16 players
+HOST = '127.0.0.1'
+PORT = 12345
+BUFFER_SIZE = 4096
