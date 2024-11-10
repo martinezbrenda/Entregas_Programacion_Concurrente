@@ -97,169 +97,285 @@ class Forma:
         # Redimensionamos la imagen al tamaño de la forma
         self.imagen = pygame.transform.scale(self.imagen, (self.tamano, self.tamano))
 
-# Función para mostrar el menú donde el jugador selecciona las formas buenas y malas
-def mostrar_menu():
-    menu_activo = True  # Variable para controlar si el menú sigue activo
-    opciones = ['Pizza', 'Pancho', 'Torta']  # Opciones disponibles para seleccionar
-    seleccionadas_buenas = []  # Lista para almacenar las formas buenas seleccionadas
-    seleccionadas_malas = []  # Lista para almacenar las formas malas seleccionadas
-    fuente = pygame.font.SysFont(None, 36)  # Fuente para el texto del menú
-    ancho_boton = 200  # Ancho de los botones del menú
-    alto_boton = 50  # Alto de los botones del menú
+# Función para mostrar la pantalla de portada
+def mostrar_portada():
+    """Muestra la pantalla de portada con un botón para iniciar el juego."""
+    portada_activa = True
+    fuente_titulo = pygame.font.SysFont(None, 72)
+    fuente_boton = pygame.font.SysFont(None, 48)
+    ancho_boton = 200
+    alto_boton = 80
 
-    # Calculamos la posición 'x' centrada para los botones de las formas buenas y malas
-    x_centrada_buena = (ANCHO // 4) - (ancho_boton // 2)  # Mitad izquierda de la pantalla
-    x_centrada_mala = (3 * ANCHO // 4) - (ancho_boton // 2)  # Mitad derecha de la pantalla
+    # Posición del botón "Jugar"
+    x_boton = (ANCHO // 2) - (ancho_boton // 2)
+    y_boton = (ALTO // 2) - (alto_boton // 2)
 
-    # Definimos las posiciones y tamaños de los botones
-    botones_buenas = []
-    botones_malas = []
-    for idx, opcion in enumerate(opciones):
-        # Definimos los rectángulos de los botones de las formas buenas
-        rect_buena = pygame.Rect(x_centrada_buena, 200 + idx * 60, ancho_boton, alto_boton)
-        botones_buenas.append((rect_buena, opcion))
+    boton_jugar = pygame.Rect(x_boton, y_boton, ancho_boton, alto_boton)
 
-        # Definimos los rectángulos de los botones de las formas malas
-        rect_mala = pygame.Rect(x_centrada_mala, 200 + idx * 60, ancho_boton, alto_boton)
-        botones_malas.append((rect_mala, opcion))
+    while portada_activa:
+        pantalla.fill(BLANCO)  # Fondo blanco
+        texto_titulo = fuente_titulo.render("Atrapa las Comidas", True, NEGRO)
+        pantalla.blit(texto_titulo, (ANCHO // 2 - texto_titulo.get_width() // 2, 100))
 
-    while menu_activo:
-        pantalla.fill(BLANCO)  # Rellenamos la pantalla con color blanco
-        texto_titulo = fuente.render("Selecciona las comidas buenas y malas", True, NEGRO)  # Texto del título del menú
-        pantalla.blit(texto_titulo, (ANCHO // 2 - texto_titulo.get_width() // 2, 50))  # Mostramos el título centrado
+        # Dibujar el botón "Jugar"
+        pygame.draw.rect(pantalla, (0, 150, 0), boton_jugar)
+        texto_boton = fuente_boton.render("Jugar", True, BLANCO)
+        texto_boton_rect = texto_boton.get_rect(center=boton_jugar.center)
+        pantalla.blit(texto_boton, texto_boton_rect)
 
+        # Manejo de eventos
         for evento in pygame.event.get():
-            if evento.type == pygame.QUIT:  # Si el usuario cierra la ventana
+            if evento.type == pygame.QUIT:
                 pygame.quit()
                 exit()
-            elif evento.type == pygame.MOUSEBUTTONDOWN:  # Si el usuario hace clic con el ratón
-                pos = pygame.mouse.get_pos()  # Obtenemos la posición del ratón
-                # Verificamos si el clic fue en un botón de las formas buenas
-                for boton, opcion in botones_buenas:
-                    if boton.collidepoint(pos):
-                        if opcion not in seleccionadas_buenas:
-                            seleccionadas_buenas.append(opcion)
-                        else:
-                            seleccionadas_buenas.remove(opcion)
-                # Verificamos si el clic fue en un botón de las formas malas
-                for boton, opcion in botones_malas:
-                    if boton.collidepoint(pos):
-                        if opcion not in seleccionadas_malas:
-                            seleccionadas_malas.append(opcion)
-                        else:
-                            seleccionadas_malas.remove(opcion)
-            elif evento.type == pygame.KEYDOWN:
-                if evento.key == pygame.K_RETURN:  # Si el usuario presiona la tecla ENTER
-                    menu_activo = False  # Salimos del menú
+            elif evento.type == pygame.MOUSEBUTTONDOWN:
+                if boton_jugar.collidepoint(evento.pos):
+                    portada_activa = False
 
-        # Mostramos los botones y opciones para las formas buenas
-        texto_buenas = fuente.render("Comidas Buenas:", True, NEGRO)
-        pantalla.blit(texto_buenas, (x_centrada_buena, 150))  # Texto para indicar las formas buenas
-        for boton, opcion in botones_buenas:
-            seleccionado = opcion in seleccionadas_buenas  # Verificamos si está seleccionada
-            color_boton = (0, 200, 0) if seleccionado else (200, 200, 200)  # Color dependiendo del estado
-            pygame.draw.rect(pantalla, color_boton, boton)  # Dibujamos el botón
-            texto_opcion = fuente.render(opcion, True, NEGRO)
-            texto_rect = texto_opcion.get_rect(center=boton.center)
-            pantalla.blit(texto_opcion, texto_rect)  # Mostramos el texto de la opción en el botón
+        pygame.display.flip()
+        reloj.tick(30)
 
-        # Mostramos los botones y opciones para las formas malas
-        texto_malas = fuente.render("Comidas Malas:", True, NEGRO)
-        pantalla.blit(texto_malas, (x_centrada_mala, 150))  # Texto para indicar las formas malas
-        for boton, opcion in botones_malas:
-            seleccionado = opcion in seleccionadas_malas  # Verificamos si está seleccionada
-            color_boton = (200, 0, 0) if seleccionado else (200, 200, 200)  # Color dependiendo del estado
-            pygame.draw.rect(pantalla, color_boton, boton)  # Dibujamos el botón
-            texto_opcion = fuente.render(opcion, True, NEGRO)
-            texto_rect = texto_opcion.get_rect(center=boton.center)
-            pantalla.blit(texto_opcion, texto_rect)  # Mostramos el texto de la opción en el botón
+# Función para mostrar la pantalla de final del juego
+def mostrar_pantalla_fin():
+    """Muestra la pantalla final del juego con las opciones de 'Volver a Jugar' o 'Salir'."""
+    fin_activo = True
+    fuente_titulo = pygame.font.SysFont(None, 72)
+    fuente_boton = pygame.font.SysFont(None, 48)
+    ancho_boton = 200
+    alto_boton = 80
 
-        # Mostramos instrucciones en la parte inferior del menú
-        instrucciones = [
-            "Haz clic en las comidas para seleccionar/deseleccionar.",
-            "Presiona ENTER para comenzar el juego."
+    # Posiciones de los botones
+    x_boton_volver = (ANCHO // 2) - (ancho_boton // 2)
+    y_boton_volver = (ALTO // 2) - (alto_boton) - 20
+
+    x_boton_salir = (ANCHO // 2) - (ancho_boton // 2)
+    y_boton_salir = (ALTO // 2) + 20
+
+    boton_volver = pygame.Rect(x_boton_volver, y_boton_volver, ancho_boton, alto_boton)
+    boton_salir = pygame.Rect(x_boton_salir, y_boton_salir, ancho_boton, alto_boton)
+
+    while fin_activo:
+        pantalla.fill(BLANCO)  # Fondo blanco
+        texto_titulo = fuente_titulo.render("¡Juego Terminado!", True, NEGRO)
+        pantalla.blit(texto_titulo, (ANCHO // 2 - texto_titulo.get_width() // 2, 100))
+
+        # Dibujar el botón "Volver a Jugar"
+        pygame.draw.rect(pantalla, (0, 150, 0), boton_volver)
+        texto_boton_volver = fuente_boton.render("Volver a Jugar", True, BLANCO)
+        texto_boton_volver_rect = texto_boton_volver.get_rect(center=boton_volver.center)
+        pantalla.blit(texto_boton_volver, texto_boton_volver_rect)
+
+        # Dibujar el botón "Salir"
+        pygame.draw.rect(pantalla, (150, 0, 0), boton_salir)
+        texto_boton_salir = fuente_boton.render("Salir", True, BLANCO)
+        texto_boton_salir_rect = texto_boton_salir.get_rect(center=boton_salir.center)
+        pantalla.blit(texto_boton_salir, texto_boton_salir_rect)
+
+        # Manejo de eventos
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif evento.type == pygame.MOUSEBUTTONDOWN:
+                if boton_volver.collidepoint(evento.pos):
+                    return "volver"
+                elif boton_salir.collidepoint(evento.pos):
+                    return "salir"
+
+        pygame.display.flip()
+        reloj.tick(30)
+
+
+# Función para mostrar el menú de selección
+def mostrar_menu():
+    """Muestra el menú de selección de comidas buenas y malas.
+    """
+    while True:
+        menu_activo = True
+        opciones = ['Pizza', 'Pancho', 'Torta']
+        seleccionadas_buenas = []
+        seleccionadas_malas = []
+        fuente = pygame.font.SysFont(None, 36)
+        ancho_boton = 200
+        alto_boton = 50
+
+        # Calculamos la posición 'x' centrada para los botones de las formas buenas y malas
+        x_centrada_buena = (ANCHO // 4) - (ancho_boton // 2)
+        x_centrada_mala = (3 * ANCHO // 4) - (ancho_boton // 2)
+
+        # Definimos las posiciones y tamaños de los botones
+        botones_buenas = [
+            (pygame.Rect(x_centrada_buena, 200 + idx * 60, ancho_boton, alto_boton), opcion)
+            for idx, opcion in enumerate(opciones)
         ]
-        for idx, instruccion in enumerate(instrucciones):
-            texto_instruccion = fuente.render(instruccion, True, NEGRO)
-            pantalla.blit(texto_instruccion, (ANCHO // 2 - texto_instruccion.get_width() // 2, 450 + idx * 30))
+        botones_malas = [
+            (pygame.Rect(x_centrada_mala, 200 + idx * 60, ancho_boton, alto_boton), opcion)
+            for idx, opcion in enumerate(opciones)
+        ]
 
-        pygame.display.flip()  # Actualizamos la pantalla
-        reloj.tick(30)  # Controlamos la velocidad del menú a 30 FPS
+        while menu_activo:
+            pantalla.fill(BLANCO)
+            texto_titulo = fuente.render("Selecciona las comidas buenas y malas", True, NEGRO)
+            pantalla.blit(texto_titulo, (ANCHO // 2 - texto_titulo.get_width() // 2, 50))
 
-    return seleccionadas_buenas, seleccionadas_malas  # Retornamos las selecciones del jugador
+            for evento in pygame.event.get():
+                if evento.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+                elif evento.type == pygame.MOUSEBUTTONDOWN:
+                    pos = pygame.mouse.get_pos()
+                    # Verificar clic en botones de formas buenas
+                    manejar_seleccion(pos, botones_buenas, seleccionadas_buenas)
+                    # Verificar clic en botones de formas malas
+                    manejar_seleccion(pos, botones_malas, seleccionadas_malas)
+                elif evento.type == pygame.KEYDOWN and evento.key == pygame.K_RETURN:
+                    menu_activo = False
 
-# Función para generar las formas en el juego
-def generar_formas():
-    frecuencia_base = 1.0  # Frecuencia inicial para la aparición de nuevas formas (en segundos)
-    while ejecutando:
-        # Aumentamos la dificultad disminuyendo el tiempo entre las apariciones de las formas
-        tiempo_juego = time.time() - tiempo_inicial
-        frecuencia = max(0.2, frecuencia_base - tiempo_juego * 0.01)  # Disminuimos la frecuencia gradualmente
-        nueva_forma = Forma()  # Creamos una nueva instancia de Forma
+            # Dibujar los botones y mostrar el texto correspondiente
+            mostrar_botones(botones_buenas, seleccionadas_buenas, "Comidas Buenas:", x_centrada_buena, 150, (0, 200, 0))
+            mostrar_botones(botones_malas, seleccionadas_malas, "Comidas Malas:", x_centrada_mala, 150, (200, 0, 0))
 
-        # Verificamos si la forma está entre las seleccionadas por el jugador
-        forma_nombre = nueva_forma.nombre
-        if nueva_forma.tipo == 'buena':
-            if forma_nombre not in formas_buenas_seleccionadas:
-                continue  # No generamos formas no seleccionadas
+            # Mostrar instrucciones
+            instrucciones = [
+                "Haz clic en las comidas para seleccionar/deseleccionar.",
+                "Presiona ENTER para comenzar el juego."
+            ]
+            for idx, instruccion in enumerate(instrucciones):
+                texto_instruccion = fuente.render(instruccion, True, NEGRO)
+                pantalla.blit(texto_instruccion, (ANCHO // 2 - texto_instruccion.get_width() // 2, 450 + idx * 30))
+
+            pygame.display.flip()
+            reloj.tick(30)
+
+        # Validar que al menos haya una forma buena y una mala seleccionada
+        if seleccionadas_buenas and seleccionadas_malas:
+            return seleccionadas_buenas, seleccionadas_malas
         else:
-            if forma_nombre not in formas_malas_seleccionadas:
+            # Mostrar mensaje de error si no se seleccionó ninguna opción válida
+            fuente_error = pygame.font.SysFont(None, 48)
+            texto_error = fuente_error.render("Debe seleccionar al menos una forma buena y una forma mala.", True, (255, 0, 0)) # Ajustar para que se vea bien
+            pantalla.blit(texto_error, (ANCHO // 2 - texto_error.get_width() // 2, ALTO // 2))
+            pygame.display.flip()
+            time.sleep(2)  # Pausa para que el usuario vea el mensaje
+
+# Función para manejar la selección de opciones del menú
+def manejar_seleccion(pos, botones, seleccionadas):
+    """Maneja la selección y deselección de opciones del menú.
+    """
+    for boton, opcion in botones:
+        if boton.collidepoint(pos):
+            if opcion not in seleccionadas:
+                seleccionadas.append(opcion)
+            else:
+                seleccionadas.remove(opcion)
+
+# Función para mostrar los botones en pantalla
+def mostrar_botones(botones, seleccionadas, titulo, x, y, color_seleccionado):
+    """Dibuja los botones y muestra el título correspondiente.
+    """
+    fuente = pygame.font.SysFont(None, 36)
+    texto = fuente.render(titulo, True, NEGRO)
+    pantalla.blit(texto, (x, y))
+    for boton, opcion in botones:
+        seleccionado = opcion in seleccionadas
+        color_boton = color_seleccionado if seleccionado else (200, 200, 200)
+        pygame.draw.rect(pantalla, color_boton, boton)
+        texto_opcion = fuente.render(opcion, True, NEGRO)
+        texto_rect = texto_opcion.get_rect(center=boton.center)
+        pantalla.blit(texto_opcion, texto_rect)
+
+class GeneradorFormas:
+    def __init__(self, cola, lock, frecuencia_base=1.0):
+        self.cola = cola
+        self.lock = lock
+        self.frecuencia_base = frecuencia_base
+        self.ejecutando = True
+
+    def generar_formas(self):
+        """Genera nuevas formas a intervalos decrecientes, aumentando la dificultad con el tiempo."""
+        while self.ejecutando:
+            tiempo_juego = time.time() - tiempo_inicial
+            frecuencia = max(0.2, self.frecuencia_base - tiempo_juego * 0.01)
+            nueva_forma = Forma()
+
+            # Verificamos si la forma está entre las seleccionadas por el jugador
+            forma_nombre = nueva_forma.nombre
+            if nueva_forma.tipo == 'buena' and forma_nombre not in formas_buenas_seleccionadas:
+                continue  # No generamos formas no seleccionadas
+            elif nueva_forma.tipo == 'mala' and forma_nombre not in formas_malas_seleccionadas:
                 continue  # No generamos formas no seleccionadas
 
-        # Añadimos la nueva forma a la cola
-        with lock_formas:
-            cola_formas.put(nueva_forma)
-        time.sleep(frecuencia)  # Esperamos antes de generar la siguiente forma
+            # Añadimos la nueva forma a la cola
+            with self.lock:
+                self.cola.put(nueva_forma)
+            time.sleep(frecuencia)
 
-# Función para mover las formas hacia abajo
-def mover_formas():
-    global puntaje, vidas
-    while ejecutando:
-        time.sleep(0.02)  # Controlamos la velocidad de actualización
-        with lock_formas:
-            formas_actualizadas = []
-            while not cola_formas.empty():
-                forma = cola_formas.get()
-                # Aumentamos la velocidad de caída con el tiempo para incrementar la dificultad
-                tiempo_juego = time.time() - tiempo_inicial
-                incremento_velocidad = tiempo_juego * 0.002  # Incremento gradual de la velocidad
-                forma.y += forma.velocidad + incremento_velocidad
+    def detener(self):
+        """Detiene la generación de formas."""
+        self.ejecutando = False
 
-                # Verificamos si la forma ha salido de la pantalla
-                if forma.y > ALTO:
-                    continue
-                # Verificamos colisión con el jugador
-                elif (jugador.y < forma.y + forma.tamano and
-                      jugador.x < forma.x + forma.tamano and
-                      jugador.x + jugador.ancho_jugador > forma.x):
-                    if forma.tipo == 'buena':
-                        puntaje += 1  # Aumentamos el puntaje si la forma es buena
-                    else:
-                        vidas -= 1  # Restamos una vida si la forma es mala
-                    continue  # La forma se elimina después de la colisión
+class MovimientoFormas:
+    def __init__(self, cola, lock, jugador, reloj):
+        self.cola = cola
+        self.lock = lock
+        self.jugador = jugador
+        self.reloj = reloj
+        self.ejecutando = True
 
-                formas_actualizadas.append(forma)  # Añadimos la forma a la lista actualizada
+    def mover_formas(self):
+        """Mueve las formas y verifica las colisiones con el jugador."""
+        global puntaje, vidas
+        while self.ejecutando:
+            self.reloj.tick(50)  # Ajustamos la velocidad de actualización
+            with self.lock:
+                formas_actualizadas = []
+                while not self.cola.empty():
+                    forma = self.cola.get()
+                    # Aumentar la velocidad de caída con el tiempo para incrementar la dificultad
+                    tiempo_juego = time.time() - tiempo_inicial
+                    incremento_velocidad = tiempo_juego * 0.002
+                    forma.y += forma.velocidad + incremento_velocidad
 
-            # Volvemos a poner las formas actualizadas en la cola
-            for forma in formas_actualizadas:
-                cola_formas.put(forma)
+                    # Verificar si la forma ha salido de la pantalla
+                    if forma.y > ALTO:
+                        continue
+                    # Verificar colisión con el jugador
+                    elif (self.jugador.y < forma.y + forma.tamano and
+                          self.jugador.x < forma.x + forma.tamano and
+                          self.jugador.x + self.jugador.ancho_jugador > forma.x):
+                        if forma.tipo == 'buena':
+                            puntaje += 1
+                        else:
+                            vidas -= 1
+                        continue
+
+                    formas_actualizadas.append(forma)
+
+                # Volver a poner las formas actualizadas en la cola
+                for forma in formas_actualizadas:
+                    self.cola.put(forma)
+
+    def detener(self):
+        """Detiene el movimiento de las formas."""
+        self.ejecutando = False
 
 # Función para dibujar una forma en la pantalla
 def dibujar_forma(forma):
     pantalla.blit(forma.imagen, (forma.x, forma.y))  # Dibujamos la imagen en la posición de la forma
 
+# Mostrar la portada antes de continuar al menú de opciones
+mostrar_portada()
+
 # Mostramos el menú y obtenemos las selecciones del jugador
 formas_buenas_seleccionadas, formas_malas_seleccionadas = mostrar_menu()
 
-# Validamos que el jugador haya seleccionado al menos una forma buena y una mala
-if not formas_buenas_seleccionadas or not formas_malas_seleccionadas:
-    print("Debe seleccionar al menos una forma buena y una forma mala.")
-    pygame.quit()
-    exit()
+# Crear instancias del generador y del movimiento de formas
+generador_formas = GeneradorFormas(cola_formas, lock_formas)
+movimiento_formas = MovimientoFormas(cola_formas, lock_formas, jugador, reloj)
 
-# Iniciamos los hilos para generar y mover las formas
-hilo_generador = threading.Thread(target=generar_formas)
-hilo_movedor = threading.Thread(target=mover_formas)
+# Iniciar los hilos para generar y mover las formas
+hilo_generador = threading.Thread(target=generador_formas.generar_formas)
+hilo_movedor = threading.Thread(target=movimiento_formas.mover_formas)
 hilo_generador.start()
 hilo_movedor.start()
 
@@ -272,6 +388,8 @@ while ejecutando:
     for evento in pygame.event.get():
         if evento.type == pygame.QUIT:  # Si el jugador cierra la ventana
             ejecutando = False
+            generador_formas.detener()
+            movimiento_formas.detener()
 
     # Manejo del movimiento del jugador
     teclas = pygame.key.get_pressed()
@@ -307,16 +425,26 @@ while ejecutando:
         texto_game_over = fuente_game_over.render("¡Juego Terminado!", True, NEGRO)
         pantalla.blit(texto_game_over, (ANCHO // 2 - texto_game_over.get_width() // 2, ALTO // 2))
         pygame.display.flip()
-        time.sleep(3)  # Esperamos 3 segundos antes de cerrar
+        time.sleep(3)
         ejecutando = False
         break
 
     # Actualizamos la pantalla
     pygame.display.flip()
 
-# Esperamos a que los hilos terminen antes de cerrar
+# Esperar a que los hilos terminen antes de cerrar
 hilo_generador.join()
 hilo_movedor.join()
 
+# Mostrar la pantalla de fin del juego
+accion = mostrar_pantalla_fin()
+if accion == "salir":
+    pygame.quit()
+    exit(0)
+elif accion == "volver":
+    mostrar_menu()
+
 # Cerramos Pygame
 pygame.quit()
+
+
