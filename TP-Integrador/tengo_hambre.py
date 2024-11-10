@@ -1,152 +1,159 @@
-import pygame
-import threading
-import random
-import time
-from queue import Queue
+# Importamos las librerías necesarias
+import pygame          # Pygame es una biblioteca para desarrollo de videojuegos en Python
+import threading       # Para crear y manejar múltiples hilos
+import random          # Para generar valores aleatorios
+import time            # Para trabajar con funciones de tiempo
+from queue import Queue  # Cola para la comunicación entre hilos
 
+# Iniciamos Pygame
 pygame.init()
 
-# Dimensiones de la pantalla (ajustadas para ser más pequeñas que la pantalla completa)
-ANCHO, ALTO = 800, 600  # Puedes cambiar estos valores a las dimensiones que prefieras
-pantalla = pygame.display.set_mode((ANCHO, ALTO))
-pygame.display.set_caption("Atrapa las Comidas")
+# Definimos las dimensiones de la pantalla del juego
+ANCHO, ALTO = 800, 600  # Ajusta el tamaño de la pantalla
+pantalla = pygame.display.set_mode((ANCHO, ALTO))  # Creamos la pantalla del juego
+pygame.display.set_caption("Atrapa las Comidas")  # Título de la ventana
 
-# Colores
+# Definimos colores usando formato RGB
 BLANCO = (255, 255, 255)
 NEGRO = (0, 0, 0)
 
-# Atributos del jugador
-
-
+# Velocidad de movimiento del jugador
 velocidad_jugador = 10
 
-# Variables del juego
-ejecutando = True
-puntaje = 0
-vidas = 3
-reloj = pygame.time.Clock()
-tiempo_inicial = time.time()
+# Variables del estado del juego
+ejecutando = True  # Controla si el juego sigue ejecutándose
+puntaje = 0        # Puntuación del jugador
+vidas = 3          # Número de vidas del jugador
+reloj = pygame.time.Clock()  # Reloj para controlar los FPS del juego
+tiempo_inicial = time.time()  # Tiempo en el que inicia el juego
 
-# Cola y lock para comunicación entre hilos
-cola_formas = Queue()
-lock_formas = threading.Lock()
+# Cola y lock (bloqueo) para manejar la comunicación entre hilos
+cola_formas = Queue()           # Cola para las formas
+lock_formas = threading.Lock()  # Lock para evitar problemas de acceso concurrente a la cola
 
-# Opciones seleccionadas por el jugador
+# Listas para almacenar las selecciones de formas buenas y malas del jugador
 formas_buenas_seleccionadas = []
 formas_malas_seleccionadas = []
 
-# Cargar imágenes de los sprites con manejo de excepciones
+# Diccionarios para almacenar las imágenes de las formas
 imagenes_formas_buenas = {}
 imagenes_formas_malas = {}
 
+# Intentamos cargar las imágenes de las formas buenas
 try:
-    imagenes_formas_buenas['Pizza'] = pygame.image.load('81_pizza.png')
-    imagenes_formas_buenas['Pancho'] = pygame.image.load('54_hotdog.png')
-    imagenes_formas_buenas['Torta'] = pygame.image.load('30_chocolatecake.png')
+    imagenes_formas_buenas['Pizza'] = pygame.image.load('img/81_pizza.png')
+    imagenes_formas_buenas['Pancho'] = pygame.image.load('img/54_hotdog.png')
+    imagenes_formas_buenas['Torta'] = pygame.image.load('img/30_chocolatecake.png')
 
-    imagenes_formas_malas['Pizza'] = pygame.image.load('81_pizza.png')
-    imagenes_formas_malas['Pancho'] = pygame.image.load('54_hotdog.png')
-    imagenes_formas_malas['Torta'] = pygame.image.load('30_chocolatecake.png')
+    imagenes_formas_malas['Pizza'] = pygame.image.load('img/81_pizza.png')
+    imagenes_formas_malas['Pancho'] = pygame.image.load('img/54_hotdog.png')
+    imagenes_formas_malas['Torta'] = pygame.image.load('img/30_chocolatecake.png')
 except pygame.error as e:
+    # Si ocurre un error al cargar las imágenes, mostramos el error y salimos
     print(f"Error al cargar imágenes de las formas: {e}")
     pygame.quit()
     exit()
 
-# Cargar imágenes del jugador
+# Cargamos las imágenes del jugador
 try:
-    imagen_jugador_derecha = pygame.image.load('nenita_der.png').convert_alpha()
-    imagen_jugador_izquierda = pygame.image.load('nenita_izq.png').convert_alpha()
+    imagen_jugador_derecha = pygame.image.load('img/nenita_der.png').convert_alpha()
+    imagen_jugador_izquierda = pygame.image.load('img/nenita_izq.png').convert_alpha()
 
-    # Escalar las imágenes al tamaño deseado
-    ancho_jugador = 100  # Puedes ajustar este valor
+    # Escalamos las imágenes del jugador al tamaño deseado
+    ancho_jugador = 100
     alto_jugador = int(imagen_jugador_derecha.get_height() * (ancho_jugador / imagen_jugador_derecha.get_width()))
 
     imagen_jugador_derecha = pygame.transform.scale(imagen_jugador_derecha, (ancho_jugador, alto_jugador))
     imagen_jugador_izquierda = pygame.transform.scale(imagen_jugador_izquierda, (ancho_jugador, alto_jugador))
 except pygame.error as e:
+    # Si ocurre un error al cargar las imágenes del jugador, mostramos el error y salimos
     print(f"Error al cargar las imágenes del jugador: {e}")
     pygame.quit()
     exit()
 
-x_jugador = ANCHO // 2 - ancho_jugador // 2
-y_jugador = ALTO - alto_jugador - 10
+# Posición inicial del jugador
+x_jugador = ANCHO // 2 - ancho_jugador // 2  # Posición horizontal centrada
+y_jugador = ALTO - alto_jugador - 10  # Posición vertical, cerca del borde inferior
 
-# Dirección actual del jugador: 'izquierda' o 'derecha'
+# Dirección inicial del jugador ('izquierda' o 'derecha')
 direccion_jugador = 'derecha'
 
-# Cargar la imagen de fondo
+# Intentamos cargar la imagen de fondo
 try:
-    imagen_fondo = pygame.image.load('background.png').convert()
-    # Escalar la imagen al tamaño de la pantalla
+    imagen_fondo = pygame.image.load('img/background.png').convert()
+    # Escalamos la imagen de fondo al tamaño de la pantalla
     imagen_fondo = pygame.transform.scale(imagen_fondo, (ANCHO, ALTO))
 except pygame.error as e:
+    # Si ocurre un error al cargar la imagen de fondo, mostramos el error y salimos
     print(f"Error al cargar la imagen de fondo: {e}")
     pygame.quit()
     exit()
 
 
-# Clase para las formas
+# Clase que representa una forma que cae (puede ser buena o mala)
 class Forma:
     def __init__(self):
-        self.tipo = random.choice(['buena', 'mala'])
-        self.tamano = random.randint(40, 80)
-        self.nombre = random.choice(['Pizza', 'Pancho', 'Torta'])
-        self.x = random.randint(0, ANCHO - self.tamano)
-        self.y = -self.tamano
-        self.velocidad = random.uniform(3, 7)
+        self.tipo = random.choice(['buena', 'mala'])  # Tipo de la forma (buena o mala)
+        self.tamano = random.randint(40, 80)  # Tamaño aleatorio de la forma
+        self.nombre = random.choice(['Pizza', 'Pancho', 'Torta'])  # Nombre de la forma
+        self.x = random.randint(0, ANCHO - self.tamano)  # Posición horizontal aleatoria
+        self.y = -self.tamano  # Posición inicial (fuera de la pantalla, para caer desde arriba)
+        self.velocidad = random.uniform(3, 7)  # Velocidad de caída
 
-        # Asignar la imagen correspondiente
+        # Asignamos la imagen correspondiente según el tipo (buena o mala)
         if self.tipo == 'buena':
             self.imagen = imagenes_formas_buenas[self.nombre]
         else:
             self.imagen = imagenes_formas_malas[self.nombre]
         
-        # Redimensionar la imagen al tamaño de la forma
+        # Redimensionamos la imagen al tamaño de la forma
         self.imagen = pygame.transform.scale(self.imagen, (self.tamano, self.tamano))
 
+# Función para mostrar el menú donde el jugador selecciona las formas buenas y malas
 def mostrar_menu():
-    menu_activo = True
-    opciones = ['Pizza', 'Pancho', 'Torta']
-    seleccionadas_buenas = []
-    seleccionadas_malas = []
-    fuente = pygame.font.SysFont(None, 36)
-    ancho_boton = 200  # Ancho de los botones
-    alto_boton = 50    # Alto de los botones
+    menu_activo = True  # Variable para controlar si el menú sigue activo
+    opciones = ['Pizza', 'Pancho', 'Torta']  # Opciones disponibles para seleccionar
+    seleccionadas_buenas = []  # Lista para almacenar las formas buenas seleccionadas
+    seleccionadas_malas = []  # Lista para almacenar las formas malas seleccionadas
+    fuente = pygame.font.SysFont(None, 36)  # Fuente para el texto del menú
+    ancho_boton = 200  # Ancho de los botones del menú
+    alto_boton = 50  # Alto de los botones del menú
 
-    # Calcular la posición 'x' centrada para cada mitad de la pantalla
-    x_centrada_buena = (ANCHO // 4) - (ancho_boton // 2)  # Centrada en la mitad izquierda
-    x_centrada_mala = (3 * ANCHO // 4) - (ancho_boton // 2)  # Centrada en la mitad derecha
+    # Calculamos la posición 'x' centrada para los botones de las formas buenas y malas
+    x_centrada_buena = (ANCHO // 4) - (ancho_boton // 2)  # Mitad izquierda de la pantalla
+    x_centrada_mala = (3 * ANCHO // 4) - (ancho_boton // 2)  # Mitad derecha de la pantalla
 
-    # Definir posiciones y tamaños de los botones
+    # Definimos las posiciones y tamaños de los botones
     botones_buenas = []
     botones_malas = []
     for idx, opcion in enumerate(opciones):
-        # Botones para formas buenas
+        # Definimos los rectángulos de los botones de las formas buenas
         rect_buena = pygame.Rect(x_centrada_buena, 200 + idx * 60, ancho_boton, alto_boton)
         botones_buenas.append((rect_buena, opcion))
-        # Botones para formas malas
+
+        # Definimos los rectángulos de los botones de las formas malas
         rect_mala = pygame.Rect(x_centrada_mala, 200 + idx * 60, ancho_boton, alto_boton)
         botones_malas.append((rect_mala, opcion))
 
     while menu_activo:
-        pantalla.fill(BLANCO)
-        texto_titulo = fuente.render("Selecciona las comidas buenas y malas", True, NEGRO)
-        pantalla.blit(texto_titulo, (ANCHO // 2 - texto_titulo.get_width() // 2, 50))
+        pantalla.fill(BLANCO)  # Rellenamos la pantalla con color blanco
+        texto_titulo = fuente.render("Selecciona las comidas buenas y malas", True, NEGRO)  # Texto del título del menú
+        pantalla.blit(texto_titulo, (ANCHO // 2 - texto_titulo.get_width() // 2, 50))  # Mostramos el título centrado
 
         for evento in pygame.event.get():
-            if evento.type == pygame.QUIT:
+            if evento.type == pygame.QUIT:  # Si el usuario cierra la ventana
                 pygame.quit()
                 exit()
-            elif evento.type == pygame.MOUSEBUTTONDOWN:
-                pos = pygame.mouse.get_pos()
-                # Verificar clic en botones de formas buenas
+            elif evento.type == pygame.MOUSEBUTTONDOWN:  # Si el usuario hace clic con el ratón
+                pos = pygame.mouse.get_pos()  # Obtenemos la posición del ratón
+                # Verificamos si el clic fue en un botón de las formas buenas
                 for boton, opcion in botones_buenas:
                     if boton.collidepoint(pos):
                         if opcion not in seleccionadas_buenas:
                             seleccionadas_buenas.append(opcion)
                         else:
                             seleccionadas_buenas.remove(opcion)
-                # Verificar clic en botones de formas malas
+                # Verificamos si el clic fue en un botón de las formas malas
                 for boton, opcion in botones_malas:
                     if boton.collidepoint(pos):
                         if opcion not in seleccionadas_malas:
@@ -154,32 +161,32 @@ def mostrar_menu():
                         else:
                             seleccionadas_malas.remove(opcion)
             elif evento.type == pygame.KEYDOWN:
-                if evento.key == pygame.K_RETURN:
-                    menu_activo = False
+                if evento.key == pygame.K_RETURN:  # Si el usuario presiona la tecla ENTER
+                    menu_activo = False  # Salimos del menú
 
-        # Mostrar botones y opciones para formas buenas
+        # Mostramos los botones y opciones para las formas buenas
         texto_buenas = fuente.render("Comidas Buenas:", True, NEGRO)
-        pantalla.blit(texto_buenas, (x_centrada_buena, 150))
+        pantalla.blit(texto_buenas, (x_centrada_buena, 150))  # Texto para indicar las formas buenas
         for boton, opcion in botones_buenas:
-            seleccionado = opcion in seleccionadas_buenas
-            color_boton = (0, 200, 0) if seleccionado else (200, 200, 200)
-            pygame.draw.rect(pantalla, color_boton, boton)
+            seleccionado = opcion in seleccionadas_buenas  # Verificamos si está seleccionada
+            color_boton = (0, 200, 0) if seleccionado else (200, 200, 200)  # Color dependiendo del estado
+            pygame.draw.rect(pantalla, color_boton, boton)  # Dibujamos el botón
             texto_opcion = fuente.render(opcion, True, NEGRO)
             texto_rect = texto_opcion.get_rect(center=boton.center)
-            pantalla.blit(texto_opcion, texto_rect)
+            pantalla.blit(texto_opcion, texto_rect)  # Mostramos el texto de la opción en el botón
 
-        # Mostrar botones y opciones para formas malas
+        # Mostramos los botones y opciones para las formas malas
         texto_malas = fuente.render("Comidas Malas:", True, NEGRO)
-        pantalla.blit(texto_malas, (x_centrada_mala, 150))
+        pantalla.blit(texto_malas, (x_centrada_mala, 150))  # Texto para indicar las formas malas
         for boton, opcion in botones_malas:
-            seleccionado = opcion in seleccionadas_malas
-            color_boton = (200, 0, 0) if seleccionado else (200, 200, 200)
-            pygame.draw.rect(pantalla, color_boton, boton)
+            seleccionado = opcion in seleccionadas_malas  # Verificamos si está seleccionada
+            color_boton = (200, 0, 0) if seleccionado else (200, 200, 200)  # Color dependiendo del estado
+            pygame.draw.rect(pantalla, color_boton, boton)  # Dibujamos el botón
             texto_opcion = fuente.render(opcion, True, NEGRO)
             texto_rect = texto_opcion.get_rect(center=boton.center)
-            pantalla.blit(texto_opcion, texto_rect)
+            pantalla.blit(texto_opcion, texto_rect)  # Mostramos el texto de la opción en el botón
 
-        # Instrucciones
+        # Mostramos instrucciones en la parte inferior del menú
         instrucciones = [
             "Haz clic en las comidas para seleccionar/deseleccionar.",
             "Presiona ENTER para comenzar el juego."
@@ -188,83 +195,81 @@ def mostrar_menu():
             texto_instruccion = fuente.render(instruccion, True, NEGRO)
             pantalla.blit(texto_instruccion, (ANCHO // 2 - texto_instruccion.get_width() // 2, 450 + idx * 30))
 
-        pygame.display.flip()
-        reloj.tick(30)
+        pygame.display.flip()  # Actualizamos la pantalla
+        reloj.tick(30)  # Controlamos la velocidad del menú a 30 FPS
 
-    return seleccionadas_buenas, seleccionadas_malas
+    return seleccionadas_buenas, seleccionadas_malas  # Retornamos las selecciones del jugador
 
+# Función para generar las formas en el juego
 def generar_formas():
-    frecuencia_base = 1.0  # Frecuencia inicial de aparición (en segundos)
+    frecuencia_base = 1.0  # Frecuencia inicial para la aparición de nuevas formas (en segundos)
     while ejecutando:
-        # Aumentar la dificultad disminuyendo el tiempo entre apariciones
+        # Aumentamos la dificultad disminuyendo el tiempo entre las apariciones de las formas
         tiempo_juego = time.time() - tiempo_inicial
-        frecuencia = max(0.2, frecuencia_base - tiempo_juego * 0.01)
-        nueva_forma = Forma()
+        frecuencia = max(0.2, frecuencia_base - tiempo_juego * 0.01)  # Disminuimos la frecuencia gradualmente
+        nueva_forma = Forma()  # Creamos una nueva instancia de Forma
 
-        # Verificar si la forma está entre las seleccionadas
+        # Verificamos si la forma está entre las seleccionadas por el jugador
         forma_nombre = nueva_forma.nombre
         if nueva_forma.tipo == 'buena':
             if forma_nombre not in formas_buenas_seleccionadas:
-                continue  # No generar formas no seleccionadas
+                continue  # No generamos formas no seleccionadas
         else:
             if forma_nombre not in formas_malas_seleccionadas:
-                continue  # No generar formas no seleccionadas
+                continue  # No generamos formas no seleccionadas
 
+        # Añadimos la nueva forma a la cola
         with lock_formas:
             cola_formas.put(nueva_forma)
-        time.sleep(frecuencia)
+        time.sleep(frecuencia)  # Esperamos antes de generar la siguiente forma
 
-def obtener_nombre_forma(forma):
-    # Determina el nombre de la forma según sus características
-    if forma.tamano >= 40:
-        return 'Rectángulo'
-    elif forma.tamano >= 30:
-        return 'Círculo'
-    else:
-        return 'Triángulo'
-
+# Función para mover las formas hacia abajo
 def mover_formas():
     global puntaje, vidas
     while ejecutando:
-        time.sleep(0.02)  # Controla la velocidad de actualización
+        time.sleep(0.02)  # Controlamos la velocidad de actualización
         with lock_formas:
             formas_actualizadas = []
             while not cola_formas.empty():
                 forma = cola_formas.get()
-                # Aumentar la velocidad de caída con el tiempo para incrementar la dificultad
+                # Aumentamos la velocidad de caída con el tiempo para incrementar la dificultad
                 tiempo_juego = time.time() - tiempo_inicial
-                incremento_velocidad = tiempo_juego * 0.002  # Incremento gradual
+                incremento_velocidad = tiempo_juego * 0.002  # Incremento gradual de la velocidad
                 forma.y += forma.velocidad + incremento_velocidad
-                # Verifica si la forma ha salido de la pantalla
+
+                # Verificamos si la forma ha salido de la pantalla
                 if forma.y > ALTO:
                     continue
-                # Verifica colisión con el jugador
+                # Verificamos colisión con el jugador
                 elif (y_jugador < forma.y + forma.tamano and
                       x_jugador < forma.x + forma.tamano and
                       x_jugador + ancho_jugador > forma.x):
                     if forma.tipo == 'buena':
-                        puntaje += 1
+                        puntaje += 1  # Aumentamos el puntaje si la forma es buena
                     else:
-                        vidas -= 1
+                        vidas -= 1  # Restamos una vida si la forma es mala
                     continue  # La forma se elimina después de la colisión
-                formas_actualizadas.append(forma)
-            # Vuelve a poner las formas actualizadas en la cola
+
+                formas_actualizadas.append(forma)  # Añadimos la forma a la lista actualizada
+
+            # Volvemos a poner las formas actualizadas en la cola
             for forma in formas_actualizadas:
                 cola_formas.put(forma)
 
+# Función para dibujar una forma en la pantalla
 def dibujar_forma(forma):
-    pantalla.blit(forma.imagen, (forma.x, forma.y))
+    pantalla.blit(forma.imagen, (forma.x, forma.y))  # Dibujamos la imagen en la posición de la forma
 
-# Mostrar el menú y obtener las selecciones del jugador
+# Mostramos el menú y obtenemos las selecciones del jugador
 formas_buenas_seleccionadas, formas_malas_seleccionadas = mostrar_menu()
 
-# Validar que al menos haya una forma buena y una mala seleccionada
+# Validamos que el jugador haya seleccionado al menos una forma buena y una mala
 if not formas_buenas_seleccionadas or not formas_malas_seleccionadas:
     print("Debe seleccionar al menos una forma buena y una forma mala.")
     pygame.quit()
     exit()
 
-# Iniciar hilos
+# Iniciamos los hilos para generar y mover las formas
 hilo_generador = threading.Thread(target=generar_formas)
 hilo_movedor = threading.Thread(target=mover_formas)
 hilo_generador.start()
@@ -272,58 +277,58 @@ hilo_movedor.start()
 
 # Bucle principal del juego
 while ejecutando:
-    reloj.tick(60)  # 60 FPS
-    pantalla.blit(imagen_fondo, (0, 0))
+    reloj.tick(60)  # Controlamos el juego a 60 FPS
+    pantalla.blit(imagen_fondo, (0, 0))  # Dibujamos la imagen de fondo
 
+    # Manejamos los eventos del juego
     for evento in pygame.event.get():
-        if evento.type == pygame.QUIT:
+        if evento.type == pygame.QUIT:  # Si el jugador cierra la ventana
             ejecutando = False
 
-    # Manejo de movimiento del jugador
+    # Manejo del movimiento del jugador
     teclas = pygame.key.get_pressed()
     if teclas[pygame.K_LEFT] and x_jugador - velocidad_jugador >= 0:
-        x_jugador -= velocidad_jugador
+        x_jugador -= velocidad_jugador  # Movemos al jugador a la izquierda
         direccion_jugador = 'izquierda'
     elif teclas[pygame.K_RIGHT] and x_jugador + velocidad_jugador <= ANCHO - ancho_jugador:
-        x_jugador += velocidad_jugador
+        x_jugador += velocidad_jugador  # Movemos al jugador a la derecha
         direccion_jugador = 'derecha'
 
-
-    # Dibujar jugador según la dirección
+    # Dibujamos al jugador según la dirección
     if direccion_jugador == 'derecha':
         pantalla.blit(imagen_jugador_derecha, (x_jugador, y_jugador))
     else:
         pantalla.blit(imagen_jugador_izquierda, (x_jugador, y_jugador))
 
-
-    # Dibujar formas
+    # Dibujamos las formas
     with lock_formas:
         formas_a_dibujar = list(cola_formas.queue)
     for forma in formas_a_dibujar:
         dibujar_forma(forma)
 
-    # Mostrar puntaje y vidas
+    # Mostramos el puntaje y las vidas
     fuente = pygame.font.SysFont(None, 36)
     texto_puntaje = fuente.render(f"Puntaje: {puntaje}", True, NEGRO)
     texto_vidas = fuente.render(f"Vidas: {vidas}", True, NEGRO)
     pantalla.blit(texto_puntaje, (10, 10))
     pantalla.blit(texto_vidas, (10, 50))
 
-    # Verificar si el jugador ha perdido todas las vidas
+    # Verificamos si el jugador ha perdido todas las vidas
     if vidas <= 0:
         fuente_game_over = pygame.font.SysFont(None, 72)
         texto_game_over = fuente_game_over.render("¡Juego Terminado!", True, NEGRO)
         pantalla.blit(texto_game_over, (ANCHO // 2 - texto_game_over.get_width() // 2, ALTO // 2))
         pygame.display.flip()
-        time.sleep(3)
+        time.sleep(3)  # Esperamos 3 segundos antes de cerrar
         ejecutando = False
         break
 
-    # Actualizar pantalla
+    # Actualizamos la pantalla
     pygame.display.flip()
 
-# Esperar a que los hilos terminen antes de cerrar
+# Esperamos a que los hilos terminen antes de cerrar
 hilo_generador.join()
 hilo_movedor.join()
 
+# Cerramos Pygame
 pygame.quit()
