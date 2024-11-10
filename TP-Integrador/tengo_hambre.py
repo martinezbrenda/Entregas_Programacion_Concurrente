@@ -1,11 +1,9 @@
-# Importamos las librerías necesarias
-import pygame          # Pygame es una biblioteca para desarrollo de videojuegos en Python
-import threading       # Para crear y manejar múltiples hilos
-import random          # Para generar valores aleatorios
-import time            # Para trabajar con funciones de tiempo
-from queue import Queue  # Cola para la comunicación entre hilos
+import pygame
+import threading
+import random
+import time
+from queue import Queue
 
-# Iniciamos Pygame
 pygame.init()
 
 # Definimos las dimensiones de la pantalla del juego
@@ -39,56 +37,46 @@ formas_malas_seleccionadas = []
 imagenes_formas_buenas = {}
 imagenes_formas_malas = {}
 
-# Intentamos cargar las imágenes de las formas buenas
-try:
-    imagenes_formas_buenas['Pizza'] = pygame.image.load('img/81_pizza.png')
-    imagenes_formas_buenas['Pancho'] = pygame.image.load('img/54_hotdog.png')
-    imagenes_formas_buenas['Torta'] = pygame.image.load('img/30_chocolatecake.png')
+# Función para cargar imágenes con manejo de errores
+def cargar_imagen(ruta, escala=None):
+    try:
+        imagen = pygame.image.load(ruta).convert_alpha()
+        if escala:
+            imagen = pygame.transform.scale(imagen, escala)
+        return imagen
+    except pygame.error as e:
+        print(f"Error al cargar la imagen '{ruta}': {e}")
+        pygame.quit()
+        exit()
 
-    imagenes_formas_malas['Pizza'] = pygame.image.load('img/81_pizza.png')
-    imagenes_formas_malas['Pancho'] = pygame.image.load('img/54_hotdog.png')
-    imagenes_formas_malas['Torta'] = pygame.image.load('img/30_chocolatecake.png')
-except pygame.error as e:
-    # Si ocurre un error al cargar las imágenes, mostramos el error y salimos
-    print(f"Error al cargar imágenes de las formas: {e}")
-    pygame.quit()
-    exit()
+# Cargar imágenes de las formas buenas y malas
+imagenes_formas_buenas = {
+    'Pizza': cargar_imagen('img/81_pizza.png'),
+    'Pancho': cargar_imagen('img/54_hotdog.png'),
+    'Torta': cargar_imagen('img/30_chocolatecake.png')
+}
 
-# Cargamos las imágenes del jugador
-try:
-    imagen_jugador_derecha = pygame.image.load('img/nenita_der.png').convert_alpha()
-    imagen_jugador_izquierda = pygame.image.load('img/nenita_izq.png').convert_alpha()
+imagenes_formas_malas = {
+    'Pizza': cargar_imagen('img/81_pizza.png'),
+    'Pancho': cargar_imagen('img/54_hotdog.png'),
+    'Torta': cargar_imagen('img/30_chocolatecake.png')
+}
 
-    # Escalamos las imágenes del jugador al tamaño deseado
-    ancho_jugador = 100
-    alto_jugador = int(imagen_jugador_derecha.get_height() * (ancho_jugador / imagen_jugador_derecha.get_width()))
+# Cargar imagen de fondo
+imagen_fondo = cargar_imagen('img/background.png', (ANCHO, ALTO))
 
-    imagen_jugador_derecha = pygame.transform.scale(imagen_jugador_derecha, (ancho_jugador, alto_jugador))
-    imagen_jugador_izquierda = pygame.transform.scale(imagen_jugador_izquierda, (ancho_jugador, alto_jugador))
-except pygame.error as e:
-    # Si ocurre un error al cargar las imágenes del jugador, mostramos el error y salimos
-    print(f"Error al cargar las imágenes del jugador: {e}")
-    pygame.quit()
-    exit()
+class Jugador:
+    def __init__(self):
+        self.ancho_jugador = 100
+        self.alto_jugador = int(self.ancho_jugador * 1.5)
+        self.imagen_derecha = cargar_imagen('img/nenita_der.png', (self.ancho_jugador, self.alto_jugador))
+        self.imagen_izquierda = cargar_imagen('img/nenita_izq.png', (self.ancho_jugador, self.alto_jugador))
 
-# Posición inicial del jugador
-x_jugador = ANCHO // 2 - ancho_jugador // 2  # Posición horizontal centrada
-y_jugador = ALTO - alto_jugador - 10  # Posición vertical, cerca del borde inferior
+        self.x = ANCHO // 2 - self.ancho_jugador // 2
+        self.y = ALTO - self.alto_jugador - 10
+        self.direccion_jugador = 'derecha'
 
-# Dirección inicial del jugador ('izquierda' o 'derecha')
-direccion_jugador = 'derecha'
-
-# Intentamos cargar la imagen de fondo
-try:
-    imagen_fondo = pygame.image.load('img/background.png').convert()
-    # Escalamos la imagen de fondo al tamaño de la pantalla
-    imagen_fondo = pygame.transform.scale(imagen_fondo, (ANCHO, ALTO))
-except pygame.error as e:
-    # Si ocurre un error al cargar la imagen de fondo, mostramos el error y salimos
-    print(f"Error al cargar la imagen de fondo: {e}")
-    pygame.quit()
-    exit()
-
+jugador = Jugador()
 
 # Clase que representa una forma que cae (puede ser buena o mala)
 class Forma:
@@ -241,9 +229,9 @@ def mover_formas():
                 if forma.y > ALTO:
                     continue
                 # Verificamos colisión con el jugador
-                elif (y_jugador < forma.y + forma.tamano and
-                      x_jugador < forma.x + forma.tamano and
-                      x_jugador + ancho_jugador > forma.x):
+                elif (jugador.y < forma.y + forma.tamano and
+                      jugador.x < forma.x + forma.tamano and
+                      jugador.x + jugador.ancho_jugador > forma.x):
                     if forma.tipo == 'buena':
                         puntaje += 1  # Aumentamos el puntaje si la forma es buena
                     else:
@@ -287,18 +275,18 @@ while ejecutando:
 
     # Manejo del movimiento del jugador
     teclas = pygame.key.get_pressed()
-    if teclas[pygame.K_LEFT] and x_jugador - velocidad_jugador >= 0:
-        x_jugador -= velocidad_jugador  # Movemos al jugador a la izquierda
-        direccion_jugador = 'izquierda'
-    elif teclas[pygame.K_RIGHT] and x_jugador + velocidad_jugador <= ANCHO - ancho_jugador:
-        x_jugador += velocidad_jugador  # Movemos al jugador a la derecha
-        direccion_jugador = 'derecha'
+    if teclas[pygame.K_LEFT] and jugador.x - velocidad_jugador >= 0:
+        jugador.x -= velocidad_jugador  # Movemos al jugador a la izquierda
+        jugador.direccion_jugador = 'izquierda'
+    elif teclas[pygame.K_RIGHT] and jugador.x + velocidad_jugador <= ANCHO - jugador.ancho_jugador:
+        jugador.x += velocidad_jugador  # Movemos al jugador a la derecha
+        jugador.direccion_jugador = 'derecha'
 
     # Dibujamos al jugador según la dirección
-    if direccion_jugador == 'derecha':
-        pantalla.blit(imagen_jugador_derecha, (x_jugador, y_jugador))
+    if jugador.direccion_jugador == 'derecha':
+        pantalla.blit(jugador.imagen_derecha, (jugador.x, jugador.y))
     else:
-        pantalla.blit(imagen_jugador_izquierda, (x_jugador, y_jugador))
+        pantalla.blit(jugador.imagen_izquierda, (jugador.x, jugador.y))
 
     # Dibujamos las formas
     with lock_formas:
