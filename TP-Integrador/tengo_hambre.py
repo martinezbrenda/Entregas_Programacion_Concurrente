@@ -446,5 +446,3 @@ elif accion == "volver":
 
 # Cerramos Pygame
 pygame.quit()
-
-
