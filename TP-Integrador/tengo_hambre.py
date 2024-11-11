@@ -67,14 +67,14 @@ imagenes_formas_malas = {
 }
 
 # Cargar imagen de fondo
-imagen_fondo = cargar_imagen('img/background.png', (ANCHO, ALTO))
+imagen_fondo = cargar_imagen('img/day2.png', (ANCHO, ALTO))
 
 class Jugador:
     def __init__(self):
         self.ancho_jugador = 100
         self.alto_jugador = int(self.ancho_jugador * 1.5)
-        self.imagen_derecha = cargar_imagen('img/nenita_der.png', (self.ancho_jugador, self.alto_jugador))
-        self.imagen_izquierda = cargar_imagen('img/nenita_izq.png', (self.ancho_jugador, self.alto_jugador))
+        self.imagen_derecha = cargar_imagen('img/nenita1_der.png', (self.ancho_jugador, self.alto_jugador))
+        self.imagen_izquierda = cargar_imagen('img/nenita1_iz.png', (self.ancho_jugador, self.alto_jugador))
 
         self.x = ANCHO // 2 - self.ancho_jugador // 2
         self.y = ALTO - self.alto_jugador - 10
@@ -348,86 +348,102 @@ class MovimientoFormas:
 def dibujar_forma(forma):
     pantalla.blit(forma.imagen, (forma.x, forma.y))  # Dibujamos la imagen en la posición de la forma
 
-# Mostrar la portada antes de continuar al menú de opciones
-mostrar_portada()
+def ejecutar_juego():
+    """Función principal para ejecutar el flujo del juego completo desde la portada hasta el final."""
+    global puntaje, vidas, tiempo_inicial, ejecutando, stop_event
 
-# Mostramos el menú y obtenemos las selecciones del jugador
-formas_buenas_seleccionadas, formas_malas_seleccionadas = mostrar_menu()
+    # Reiniciar el estado del juego
+    puntaje = 0
+    vidas = 3
+    tiempo_inicial = time.time()
+    ejecutando = True
+    stop_event.clear()
 
-# Crear instancias del generador y del movimiento de formas
-generador_formas = GeneradorFormas(cola_formas, lock_formas)
-movimiento_formas = MovimientoFormas(cola_formas, lock_formas, jugador, reloj)
+    # Crear instancias de los generadores y movimiento
+    generador_formas = GeneradorFormas(cola_formas, lock_formas)
+    movimiento_formas = MovimientoFormas(cola_formas, lock_formas, jugador, reloj)
 
-# Iniciar los hilos para generar y mover las formas
-hilo_generador = threading.Thread(target=generador_formas.generar_formas)
-hilo_movedor = threading.Thread(target=movimiento_formas.mover_formas)
-hilo_generador.start()
-hilo_movedor.start()
+    # Iniciar los hilos para generar y mover las formas
+    hilo_generador = threading.Thread(target=generador_formas.generar_formas)
+    hilo_movedor = threading.Thread(target=movimiento_formas.mover_formas)
+    hilo_generador.start()
+    hilo_movedor.start()
 
-# Bucle principal del juego
-while ejecutando:
-    reloj.tick(60)  # Controlamos el juego a 60 FPS
-    pantalla.blit(imagen_fondo, (0, 0))  # Dibujamos la imagen de fondo
+    # Bucle principal del juego
+    while ejecutando:
+        reloj.tick(60)  # Controlamos el juego a 60 FPS
+        pantalla.blit(imagen_fondo, (0, 0))  # Dibujamos la imagen de fondo
 
-    # Manejamos los eventos del juego
-    for evento in pygame.event.get():
-        if evento.type == pygame.QUIT:  # Si el jugador cierra la ventana
+        # Manejamos los eventos del juego
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:  # Si el jugador cierra la ventana
+                ejecutando = False
+                stop_event.set()
+                return "salir"
+
+        # Manejo del movimiento del jugador
+        teclas = pygame.key.get_pressed()
+        if teclas[pygame.K_LEFT] and jugador.x - velocidad_jugador >= 0:
+            jugador.x -= velocidad_jugador  # Movemos al jugador a la izquierda
+            jugador.direccion_jugador = 'izquierda'
+        elif teclas[pygame.K_RIGHT] and jugador.x + velocidad_jugador <= ANCHO - jugador.ancho_jugador:
+            jugador.x += velocidad_jugador  # Movemos al jugador a la derecha
+            jugador.direccion_jugador = 'derecha'
+
+        # Dibujamos al jugador según la dirección
+        if jugador.direccion_jugador == 'derecha':
+            pantalla.blit(jugador.imagen_derecha, (jugador.x, jugador.y))
+        else:
+            pantalla.blit(jugador.imagen_izquierda, (jugador.x, jugador.y))
+
+        # Dibujamos las formas
+        with lock_formas:
+            formas_a_dibujar = list(cola_formas.queue)
+        for forma in formas_a_dibujar:
+            dibujar_forma(forma)
+
+        # Mostramos el puntaje y las vidas
+        fuente = pygame.font.SysFont(None, 36)
+        texto_puntaje = fuente.render(f"Puntaje: {puntaje}", True, NEGRO)
+        texto_vidas = fuente.render(f"Vidas: {vidas}", True, NEGRO)
+        pantalla.blit(texto_puntaje, (10, 10))
+        pantalla.blit(texto_vidas, (10, 50))
+
+        # Verificamos si el jugador ha perdido todas las vidas
+        if vidas <= 0:
+            fuente_game_over = pygame.font.SysFont(None, 72)
+            texto_game_over = fuente_game_over.render("¡Juego Terminado!", True, NEGRO)
+            pantalla.blit(texto_game_over, (ANCHO // 2 - texto_game_over.get_width() // 2, ALTO // 2))
+            pygame.display.flip()
+            time.sleep(3)
             ejecutando = False
             stop_event.set()
 
-    # Manejo del movimiento del jugador
-    teclas = pygame.key.get_pressed()
-    if teclas[pygame.K_LEFT] and jugador.x - velocidad_jugador >= 0:
-        jugador.x -= velocidad_jugador  # Movemos al jugador a la izquierda
-        jugador.direccion_jugador = 'izquierda'
-    elif teclas[pygame.K_RIGHT] and jugador.x + velocidad_jugador <= ANCHO - jugador.ancho_jugador:
-        jugador.x += velocidad_jugador  # Movemos al jugador a la derecha
-        jugador.direccion_jugador = 'derecha'
-
-    # Dibujamos al jugador según la dirección
-    if jugador.direccion_jugador == 'derecha':
-        pantalla.blit(jugador.imagen_derecha, (jugador.x, jugador.y))
-    else:
-        pantalla.blit(jugador.imagen_izquierda, (jugador.x, jugador.y))
-
-    # Dibujamos las formas
-    with lock_formas:
-        formas_a_dibujar = list(cola_formas.queue)
-    for forma in formas_a_dibujar:
-        dibujar_forma(forma)
-
-    # Mostramos el puntaje y las vidas
-    fuente = pygame.font.SysFont(None, 36)
-    texto_puntaje = fuente.render(f"Puntaje: {puntaje}", True, NEGRO)
-    texto_vidas = fuente.render(f"Vidas: {vidas}", True, NEGRO)
-    pantalla.blit(texto_puntaje, (10, 10))
-    pantalla.blit(texto_vidas, (10, 50))
-
-    # Verificamos si el jugador ha perdido todas las vidas
-    if vidas <= 0:
-        fuente_game_over = pygame.font.SysFont(None, 72)
-        texto_game_over = fuente_game_over.render("¡Juego Terminado!", True, NEGRO)
-        pantalla.blit(texto_game_over, (ANCHO // 2 - texto_game_over.get_width() // 2, ALTO // 2))
+        # Actualizamos la pantalla
         pygame.display.flip()
-        time.sleep(3)
-        ejecutando = False
-        break
 
-    # Actualizamos la pantalla
-    pygame.display.flip()
+    # Esperar a que los hilos terminen antes de cerrar
+    hilo_generador.join()
+    hilo_movedor.join()
 
-# Esperar a que los hilos terminen antes de cerrar
-stop_event.set()
-hilo_generador.join()
-hilo_movedor.join()
+    # Mostrar la pantalla de fin del juego y tomar la acción correspondiente
+    accion = mostrar_pantalla_fin()
+    return accion
 
-# Mostrar la pantalla de fin del juego
-accion = mostrar_pantalla_fin()
-if accion == "salir":
-    pygame.quit()
-    exit(0)
-elif accion == "volver":
-    mostrar_menu()
+# Mostrar la portada antes de continuar al menú de opciones
+mostrar_portada()
+
+# Ciclo principal para ejecutar el juego y reiniciarlo si se selecciona "volver a jugar"
+while True:
+    # Mostramos el menú y obtenemos las selecciones del jugador
+    formas_buenas_seleccionadas, formas_malas_seleccionadas = mostrar_menu()
+
+    # Ejecutamos el juego y obtenemos la acción seleccionada al final
+    accion = ejecutar_juego()
+
+    # Verificamos la acción después de que termina el juego
+    if accion == "salir":
+        break  # Salimos del bucle principal y cerramos el juego
 
 # Cerramos Pygame
 pygame.quit()
