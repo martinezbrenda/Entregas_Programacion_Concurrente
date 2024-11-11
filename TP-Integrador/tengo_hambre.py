@@ -20,6 +20,7 @@ velocidad_jugador = 10
 
 # Variables del estado del juego
 ejecutando = True  # Controla si el juego sigue ejecutándose
+
 puntaje = 0        # Puntuación del jugador
 vidas = 3          # Número de vidas del jugador
 reloj = pygame.time.Clock()  # Reloj para controlar los FPS del juego
@@ -28,6 +29,9 @@ tiempo_inicial = time.time()  # Tiempo en el que inicia el juego
 # Cola y lock (bloqueo) para manejar la comunicación entre hilos
 cola_formas = Queue()           # Cola para las formas
 lock_formas = threading.Lock()  # Lock para evitar problemas de acceso concurrente a la cola
+
+# Evento para controlar la detención de hilos
+stop_event = threading.Event()
 
 # Listas para almacenar las selecciones de formas buenas y malas del jugador
 formas_buenas_seleccionadas = []
@@ -289,30 +293,21 @@ class GeneradorFormas:
         self.cola = cola
         self.lock = lock
         self.frecuencia_base = frecuencia_base
-        self.ejecutando = True
 
     def generar_formas(self):
-        """Genera nuevas formas a intervalos decrecientes, aumentando la dificultad con el tiempo."""
-        while self.ejecutando:
+        while not stop_event.is_set():
             tiempo_juego = time.time() - tiempo_inicial
             frecuencia = max(0.2, self.frecuencia_base - tiempo_juego * 0.01)
             nueva_forma = Forma()
 
-            # Verificamos si la forma está entre las seleccionadas por el jugador
-            forma_nombre = nueva_forma.nombre
-            if nueva_forma.tipo == 'buena' and forma_nombre not in formas_buenas_seleccionadas:
-                continue  # No generamos formas no seleccionadas
-            elif nueva_forma.tipo == 'mala' and forma_nombre not in formas_malas_seleccionadas:
-                continue  # No generamos formas no seleccionadas
+            if nueva_forma.tipo == 'buena' and nueva_forma.nombre not in formas_buenas_seleccionadas:
+                continue
+            elif nueva_forma.tipo == 'mala' and nueva_forma.nombre not in formas_malas_seleccionadas:
+                continue
 
-            # Añadimos la nueva forma a la cola
             with self.lock:
                 self.cola.put(nueva_forma)
-            time.sleep(frecuencia)
-
-    def detener(self):
-        """Detiene la generación de formas."""
-        self.ejecutando = False
+            stop_event.wait(frecuencia)
 
 class MovimientoFormas:
     def __init__(self, cola, lock, jugador, reloj):
@@ -320,26 +315,21 @@ class MovimientoFormas:
         self.lock = lock
         self.jugador = jugador
         self.reloj = reloj
-        self.ejecutando = True
 
     def mover_formas(self):
-        """Mueve las formas y verifica las colisiones con el jugador."""
         global puntaje, vidas
-        while self.ejecutando:
-            self.reloj.tick(50)  # Ajustamos la velocidad de actualización
+        while not stop_event.is_set():
+            self.reloj.tick(50)
             with self.lock:
                 formas_actualizadas = []
                 while not self.cola.empty():
                     forma = self.cola.get()
-                    # Aumentar la velocidad de caída con el tiempo para incrementar la dificultad
                     tiempo_juego = time.time() - tiempo_inicial
                     incremento_velocidad = tiempo_juego * 0.002
                     forma.y += forma.velocidad + incremento_velocidad
 
-                    # Verificar si la forma ha salido de la pantalla
                     if forma.y > ALTO:
                         continue
-                    # Verificar colisión con el jugador
                     elif (self.jugador.y < forma.y + forma.tamano and
                           self.jugador.x < forma.x + forma.tamano and
                           self.jugador.x + self.jugador.ancho_jugador > forma.x):
@@ -351,13 +341,8 @@ class MovimientoFormas:
 
                     formas_actualizadas.append(forma)
 
-                # Volver a poner las formas actualizadas en la cola
                 for forma in formas_actualizadas:
                     self.cola.put(forma)
-
-    def detener(self):
-        """Detiene el movimiento de las formas."""
-        self.ejecutando = False
 
 # Función para dibujar una forma en la pantalla
 def dibujar_forma(forma):
@@ -388,8 +373,7 @@ while ejecutando:
     for evento in pygame.event.get():
         if evento.type == pygame.QUIT:  # Si el jugador cierra la ventana
             ejecutando = False
-            generador_formas.detener()
-            movimiento_formas.detener()
+            stop_event.set()
 
     # Manejo del movimiento del jugador
     teclas = pygame.key.get_pressed()
@@ -433,6 +417,7 @@ while ejecutando:
     pygame.display.flip()
 
 # Esperar a que los hilos terminen antes de cerrar
+stop_event.set()
 hilo_generador.join()
 hilo_movedor.join()
 
