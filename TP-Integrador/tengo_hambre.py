@@ -66,15 +66,35 @@ imagenes_formas_malas = {
     'Torta': cargar_imagen('img/30_chocolatecake.png')
 }
 
+# Cargar imágenes de personajes disponibles
+imagenes_personajes = {
+    'Nena 1': {
+        'derecha': cargar_imagen('img/nenita1_der.png', (100, 150)),
+        'izquierda': cargar_imagen('img/nenita1_iz.png', (100, 150))
+    },
+    'Nena 2': {
+        'derecha': cargar_imagen('img/aros-der.png', (100, 150)),
+        'izquierda': cargar_imagen('img/aros-iz.png', (100, 150))
+    },
+    'Nene 1': {
+        'derecha': cargar_imagen('img/nene1-der.png', (100, 150)),
+        'izquierda': cargar_imagen('img/nene1-iz.png', (100, 150))
+    },
+    'Nene 2': {
+        'derecha': cargar_imagen('img/will-der.png', (100, 150)),
+        'izquierda': cargar_imagen('img/will-iz.png', (100, 150))
+    },
+}
+
 # Cargar imagen de fondo
 imagen_fondo = cargar_imagen('img/day2.png', (ANCHO, ALTO))
 
 class Jugador:
-    def __init__(self):
+    def __init__(self, personaje='Nena 1'):
         self.ancho_jugador = 100
         self.alto_jugador = int(self.ancho_jugador * 1.5)
-        self.imagen_derecha = cargar_imagen('img/nenita1_der.png', (self.ancho_jugador, self.alto_jugador))
-        self.imagen_izquierda = cargar_imagen('img/nenita1_iz.png', (self.ancho_jugador, self.alto_jugador))
+        self.imagen_derecha = imagenes_personajes[personaje]['derecha']
+        self.imagen_izquierda = imagenes_personajes[personaje]['izquierda']
 
         self.x = ANCHO // 2 - self.ancho_jugador // 2
         self.y = ALTO - self.alto_jugador - 10
@@ -288,6 +308,61 @@ def mostrar_botones(botones, seleccionadas, titulo, x, y, color_seleccionado):
         texto_rect = texto_opcion.get_rect(center=boton.center)
         pantalla.blit(texto_opcion, texto_rect)
 
+def mostrar_seleccion_personaje():
+    """Muestra el menú para seleccionar el personaje del jugador."""
+    seleccion_activa = True
+    fuente_titulo = pygame.font.SysFont(None, 72)
+    fuente_boton = pygame.font.SysFont(None, 36)
+    ancho_boton = 150
+    alto_boton = 200
+
+    # Posiciones iniciales de los botones de personajes
+    espaciado = 50
+    x_inicial = (ANCHO - (len(imagenes_personajes) * (ancho_boton + espaciado) - espaciado)) // 2
+    y_boton = ALTO // 2 - alto_boton // 2
+
+    botones_personajes = []
+
+    # Crear rectángulos para cada personaje
+    for idx, nombre_personaje in enumerate(imagenes_personajes.keys()):
+        x_boton = x_inicial + idx * (ancho_boton + espaciado)
+        boton = pygame.Rect(x_boton, y_boton, ancho_boton, alto_boton)
+        botones_personajes.append((boton, nombre_personaje))
+
+    personaje_seleccionado = None
+
+    while seleccion_activa:
+        pantalla.fill(BLANCO)  # Fondo blanco
+        texto_titulo = fuente_titulo.render("Selecciona tu Personaje", True, NEGRO)
+        pantalla.blit(texto_titulo, (ANCHO // 2 - texto_titulo.get_width() // 2, 50))
+
+        # Dibujar los botones de personajes
+        for boton, nombre_personaje in botones_personajes:
+            pygame.draw.rect(pantalla, (200, 200, 200), boton)
+            imagen_personaje = imagenes_personajes[nombre_personaje]['derecha']
+            pantalla.blit(imagen_personaje, (boton.x, boton.y))
+            texto_nombre = fuente_boton.render(nombre_personaje, True, NEGRO)
+            pantalla.blit(texto_nombre, (boton.x + (ancho_boton // 2) - texto_nombre.get_width() // 2, boton.y + alto_boton))
+
+        # Manejo de eventos
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            elif evento.type == pygame.MOUSEBUTTONDOWN:
+                pos = pygame.mouse.get_pos()
+                for boton, nombre_personaje in botones_personajes:
+                    if boton.collidepoint(pos):
+                        personaje_seleccionado = nombre_personaje
+                        seleccion_activa = False
+
+        pygame.display.flip()
+        reloj.tick(30)
+
+    return personaje_seleccionado
+
+
+
 class GeneradorFormas:
     def __init__(self, cola, lock, frecuencia_base=1.0):
         self.cola = cola
@@ -435,6 +510,12 @@ mostrar_portada()
 
 # Ciclo principal para ejecutar el juego y reiniciarlo si se selecciona "volver a jugar"
 while True:
+    # Seleccionar el personaje del jugador
+    personaje_seleccionado = mostrar_seleccion_personaje()
+
+    # Crear la instancia del jugador con el personaje seleccionado
+    jugador = Jugador(personaje_seleccionado)
+
     # Mostramos el menú y obtenemos las selecciones del jugador
     formas_buenas_seleccionadas, formas_malas_seleccionadas = mostrar_menu()
 
